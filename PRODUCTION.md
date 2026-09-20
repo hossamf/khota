@@ -34,15 +34,32 @@ git branch -M main
 git push -u origin main
 ```
 
-## 4. Vercel
-1. vercel.com → Add New Project → استيراد مستودع GitHub.
-2. Environment Variables (Production):
-   - `NEXT_PUBLIC_SUPABASE_URL`
-   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-   - `SUPABASE_SERVICE_ROLE_KEY` (سري — يُستخدم فقط في سكربتات محلية، لا يستورده كود التطبيق)
-   - `NEXT_PUBLIC_SITE_URL` = دومين الإنتاج
-3. Deploy → افتح رابط الإنتاج وتحقق من `/api/health`.
-4. اربط الدومين المخصص من Settings → Domains.
+## 4. Cloudflare (Workers — بدل Vercel)
+المشروع مهيأ عبر `@opennextjs/cloudflare` + `wrangler.jsonc`.
+
+1. ادفع الكود إلى GitHub (القسم 3).
+2. سجّل الدخول: `npx wrangler login`
+3. عرّف الأسرار (لا تضعها في الملفات):
+```bash
+npx wrangler secret put NEXT_PUBLIC_SUPABASE_URL
+npx wrangler secret put NEXT_PUBLIC_SUPABASE_ANON_KEY
+npx wrangler secret put SUPABASE_SERVICE_ROLE_KEY
+npx wrangler secret put NEXT_PUBLIC_SITE_URL
+```
+4. البناء والنشر (يُفضَّل على Linux/CI — بناء الويندوز المحلي قد يفشل في حزمة native):
+```bash
+npm run cf:build
+npm run cf:deploy
+```
+أو اربط المستودع من لوحة Cloudflare → Workers → Create → Import repository
+وأمر البناء: `npx opennextjs-cloudflare build`.
+5. أضف الدومين المخصص من لوحة Cloudflare → Workers → Custom Domains.
+6. في Supabase: حدّث Site URL و Redirect URLs بدومين Cloudflare.
+
+> ملاحظة: `npx opennextjs-cloudflare build` على ويندوز قد يفشل بخطأ
+> `ERR_DLOPEN_FAILED` (حزمة native) — هذه مشكلة بيئة محلية فقط،
+> وبناء Cloudflare على لينكس يعمل. تحقق محلياً عبر `npm run build`.
+
 
 ## 5. بعد النشر — فحص الدخان
 - `/` تفتح بهوية KHOTA

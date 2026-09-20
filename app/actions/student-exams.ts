@@ -123,5 +123,18 @@ export async function submitAttempt(attemptId: string, answers: AnswerInput[]) {
       submitted_at: new Date().toISOString(),
     })
     .eq("id", attemptId);
+
+  // Notify the student with their result (own-insert allowed by RLS)
+  const { data: exTitle } = await supabase
+    .from("exams").select("title_ar").eq("id", attempt.exam_id).single();
+  const { notifyUsers } = await import("@/lib/notifications");
+  const { data: me } = await supabase.auth.getUser();
+  if (me.user) {
+    await notifyUsers([me.user.id], {
+      type: "exam_result",
+      title_ar: `نتيجتك: ${result.percent}% في ${exTitle?.title_ar ?? "الامتحان"}`,
+      link: `/exams/attempts/${attemptId}`,
+    });
+  }
   return attemptId;
 }

@@ -105,8 +105,16 @@ export async function createExam(formData: FormData) {
 export async function setExamStatus(examId: string, status: string) {
   const { supabase, teacherId } = await teacherCtx();
   if (!["draft", "published", "archived"].includes(status)) throw new Error("حالة غير صالحة");
+  const { data: exam } = await supabase
+    .from("exams").select("course_id,title_ar").eq("id", examId).eq("teacher_id", teacherId).single();
+  if (!exam) throw new Error("الامتحان غير موجود");
   const { error } = await supabase.from("exams").update({ status }).eq("id", examId).eq("teacher_id", teacherId);
   if (error) throw new Error(error.message);
+  if (status === "published" && exam.course_id) {
+    const { notifyUsers, enrolledProfileIds } = await import("@/lib/notifications");
+    const ids = await enrolledProfileIds(exam.course_id as string);
+    await notifyUsers(ids, { type: "new_exam", title_ar: `امتحان جديد: ${exam.title_ar}`, link: `/exams/${examId}` });
+  }
   revalidatePath(`/dashboard/teacher/exams/${examId}`);
 }
 

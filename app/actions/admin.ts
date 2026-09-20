@@ -58,9 +58,18 @@ export async function setUserRole(userId: string, role: string) {
 
 export async function setTeacherVerified(teacherId: string, verified: boolean) {
   const { supabase, adminId } = await adminCtx();
+  const { data: t } = await supabase.from("teachers").select("profile_id").eq("id", teacherId).single();
   const { error } = await supabase.from("teachers").update({ is_verified: verified }).eq("id", teacherId);
   if (error) throw new Error(error.message);
   await log(supabase, adminId, verified ? "verify_teacher" : "unverify_teacher", "teacher", teacherId);
+  if (verified && t) {
+    const { notifyUsers } = await import("@/lib/notifications");
+    await notifyUsers([t.profile_id as string], {
+      type: "announcement",
+      title_ar: "تم توثيق حسابك كمدرس ✓",
+      link: "/dashboard/teacher",
+    });
+  }
   revalidatePath("/dashboard/admin/users");
 }
 

@@ -218,6 +218,15 @@ export async function addLesson(moduleId: string, courseId: string, formData: Fo
     status: ["draft", "published"].includes(status) ? status : "draft",
   });
   if (error) throw new Error(error.message);
+  if (status === "published") {
+    const { notifyUsers, enrolledProfileIds } = await import("@/lib/notifications");
+    const ids = await enrolledProfileIds(courseId);
+    await notifyUsers(ids, {
+      type: "new_lesson",
+      title_ar: `درس جديد: ${title}`,
+      link: `/courses`,
+    });
+  }
   revalidatePath(`/dashboard/teacher/courses/${courseId}`);
 }
 
@@ -234,6 +243,8 @@ export async function updateLesson(lessonId: string, courseId: string, formData:
     youtubeId = parseYouTubeId(rawVideo);
     if (!youtubeId) throw new Error("رابط/معرف يوتيوب غير صالح");
   }
+  const { data: prev } = await supabase
+    .from("lessons").select("status").eq("id", lessonId).eq("course_id", courseId).single();
   const { error } = await supabase
     .from("lessons")
     .update({
@@ -245,6 +256,11 @@ export async function updateLesson(lessonId: string, courseId: string, formData:
     .eq("id", lessonId)
     .eq("course_id", courseId);
   if (error) throw new Error(error.message);
+  if (prev?.status !== "published" && status === "published") {
+    const { notifyUsers, enrolledProfileIds } = await import("@/lib/notifications");
+    const ids = await enrolledProfileIds(courseId);
+    await notifyUsers(ids, { type: "new_lesson", title_ar: `درس جديد: ${title}`, link: `/courses` });
+  }
   revalidatePath(`/dashboard/teacher/courses/${courseId}`);
 }
 

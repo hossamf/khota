@@ -30,6 +30,17 @@ export default async function ExamBuilderPage({
   const inExam = new Set((exam.exam_questions ?? []).map((q: { question_id: string }) => q.question_id));
   const totalMarks = (exam.exam_questions ?? []).reduce((s: number, q: { marks: number }) => s + (q.marks ?? 0), 0);
 
+  const { data: attempts } = await supabase
+    .from("exam_attempts")
+    .select("id,percent,score,status,submitted_at,students!inner(profiles!inner(full_name))")
+    .eq("exam_id", id)
+    .order("submitted_at", { ascending: false })
+    .limit(50);
+  const graded = (attempts ?? []).filter((a: { status: string }) => a.status === "graded");
+  const avg = graded.length > 0
+    ? Math.round(graded.reduce((s: number, a: { percent: number }) => s + (a.percent ?? 0), 0) / graded.length)
+    : null;
+
   return (
     <div className="mx-auto w-full max-w-5xl px-4 py-10 sm:px-6">
       <PageHeader title={exam.title_ar} description={`المجموع: ${totalMarks} • المدة: ${exam.duration_min} دقيقة • النجاح: ${exam.pass_percent}%`}>
@@ -64,6 +75,42 @@ export default async function ExamBuilderPage({
                 </div>
               );
             })}
+        </div>
+      )}
+
+      <h2 className="mb-3 mt-8 font-black">
+        نتائج الطلاب ({graded.length} مصححة{avg !== null ? ` • المتوسط ${avg}%` : ""})
+      </h2>
+      {graded.length === 0 ? (
+        <p className="rounded-2xl border-2 border-dashed border-border p-6 text-center text-sm text-muted">لا توجد محاولات مصححة بعد.</p>
+      ) : (
+        <div className="overflow-x-auto rounded-2xl border border-border/80 bg-surface/85 backdrop-blur-xl">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-surface-2/60 text-right">
+                <th className="px-4 py-3">الطالب</th>
+                <th className="px-4 py-3">النسبة</th>
+                <th className="px-4 py-3">الدرجة</th>
+                <th className="px-4 py-3">التسليم</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border/60">
+              {((graded ?? []) as unknown as {
+                id: string; percent: number; score: number; submitted_at: string | null;
+                students: { profiles: { full_name: string | null } | { full_name: string | null }[] };
+              }[]).map((a) => {
+                const p = Array.isArray(a.students.profiles) ? a.students.profiles[0] : a.students.profiles;
+                return (
+                  <tr key={a.id} className="transition hover:bg-surface-2/50">
+                    <td className="px-4 py-3 font-bold">{p?.full_name ?? "—"}</td>
+                    <td className="px-4 py-3 font-black" dir="ltr">{a.percent}%</td>
+                    <td className="px-4 py-3">{a.score}</td>
+                    <td className="px-4 py-3 text-muted">{a.submitted_at ? new Date(a.submitted_at).toLocaleString("ar") : "—"}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
       )}
 
