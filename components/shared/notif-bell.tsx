@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Bell, CheckCheck, Inbox } from "lucide-react";
 import { markNotificationRead, markAllNotificationsRead } from "@/app/actions/notifications";
+import { PushEnabler } from "./push-enabler";
 
 export interface Notif {
   id: string;
@@ -79,6 +80,10 @@ export function NotifBell({ initial, unread }: { initial: Notif[]; unread: numbe
                 <span>قراءة الكل</span>
               </button>
             ) : null}
+          </div>
+
+          <div className="mb-2 px-1">
+            <PushEnabler />
           </div>
 
           {initial.length === 0 ? (

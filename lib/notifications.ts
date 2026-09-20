@@ -17,6 +17,13 @@ export async function notifyUsers(
       link: n.link ?? null,
     }))
   );
+  // Mirror to devices (best-effort, never fails the caller)
+  const { sendPushToUsers } = await import("@/lib/push");
+  await sendPushToUsers(unique, {
+    title: n.title_ar,
+    body: n.body_ar ?? undefined,
+    link: n.link ?? undefined,
+  });
 }
 
 /** Profile IDs of students enrolled in a course (teacher/admin readable). */

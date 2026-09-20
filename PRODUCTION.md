@@ -68,6 +68,13 @@ npm run cf:deploy
 - لوحة المدرس والأدمن تعمل
 - `/sitemap.xml` و `/robots.txt` يعملان
 
+## 7. إشعارات الجهاز (Web Push)
+1. نفّذ `0011_push_subscriptions.sql` في SQL Editor.
+2. ولّد مفاتيح VAPID: `npx web-push generate-vapid-keys` وضعها في البيئة:
+   `NEXT_PUBLIC_VAPID_PUBLIC_KEY` + `VAPID_PRIVATE_KEY` + `VAPID_SUBJECT`.
+3. المستخدم يفعّلها من قائمة الجرس 🔔 → "تفعيل إشعارات الجهاز" (تتطلب HTTPS أو localhost).
+4. على Cloudflare أضف نفس المتغيرات عبر `wrangler secret put`.
+
 ## 6. ما قبل الإطلاق العام
 - [ ] نسخة احتياطية يومية لقاعدة البيانات (Supabase Backups)
 - [ ] SMTP مخصص + قوالب الإيميل بالعربية
