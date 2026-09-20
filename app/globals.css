@@ -1,0 +1,111 @@
+@import "tailwindcss";
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-surface-raised: var(--surface-raised);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-2: var(--primary-2);
+  --color-secondary: var(--secondary);
+  --color-accent: var(--accent);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+  --color-muted: var(--muted);
+  --color-border: var(--border);
+  --font-sans: var(--font-cairo), var(--font-jakarta), system-ui, Tahoma, sans-serif;
+}
+
+:root {
+  --background: #f7f8fc;
+  --foreground: #0f172a;
+  --surface: #ffffff;
+  --surface-2: #eef1f7;
+  --surface-raised: #f4f6fb;
+  --primary: #4f46e5;
+  --primary-hover: #4338ca;
+  --primary-2: #7c3aed;
+  --secondary: #06b6d4;
+  --accent: #10b981;
+  --success: #16a34a;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --muted: #64748b;
+  --border: #e5e9f2;
+  --ring: rgba(79, 70, 229, 0.25);
+}
+
+.dark {
+  --background: #070b18;
+  --foreground: #eef1f9;
+  --surface: #0e1528;
+  --surface-2: #131c33;
+  --surface-raised: #18223c;
+  --primary: #818cf8;
+  --primary-hover: #a5b4fc;
+  --primary-2: #a78bfa;
+  --secondary: #22d3ee;
+  --accent: #34d399;
+  --success: #4ade80;
+  --warning: #fbbf24;
+  --danger: #f87171;
+  --muted: #94a3b8;
+  --border: #1e2a47;
+  --ring: rgba(129, 140, 248, 0.35);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+}
+
+::selection {
+  background: color-mix(in srgb, var(--primary) 25%, transparent);
+}
+
+/* ---------- brand utilities ---------- */
+.bg-gradient-brand {
+  background-image: linear-gradient(135deg, var(--primary), var(--secondary));
+}
+
+.bg-radial-glow {
+  background: radial-gradient(circle, rgba(79, 70, 229, 0.16), transparent 70%);
+}
+
+.card-hover {
+  transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+}
+.card-hover:hover {
+  transform: translateY(-4px);
+}
+
+/* ---------- motion ---------- */
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes spin-slow {
+  to { transform: rotate(360deg); }
+}
+@keyframes pulse-glow {
+  0%, 100% { opacity: 0.5; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.08); }
+}
+@keyframes enter {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.animate-fade-up { animation: fade-up 0.6s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.animate-spin-slow { animation: spin-slow 8s linear infinite; }
+.animate-pulse-glow { animation: pulse-glow 3s ease-in-out infinite; }
+.animate-in { animation: enter 0.15s ease-out both; }
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-up, .animate-spin-slow, .animate-pulse-glow, .animate-in {
+    animation: none;
+  }
+}

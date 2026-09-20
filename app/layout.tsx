@@ -1,0 +1,54 @@
+import type { Metadata, Viewport } from "next";
+import { Cairo, Plus_Jakarta_Sans } from "next/font/google";
+import "./globals.css";
+import { SiteHeader } from "@/components/shared/site-header";
+import { SiteFooter } from "@/components/shared/site-footer";
+
+const cairo = Cairo({
+  subsets: ["arabic"],
+  weight: ["400", "500", "600", "700", "800", "900"],
+  variable: "--font-cairo",
+  display: "swap",
+});
+
+const jakarta = Plus_Jakarta_Sans({
+  subsets: ["latin"],
+  variable: "--font-jakarta",
+  display: "swap",
+});
+
+export const viewport: Viewport = {
+  themeColor: "#4f46e5",
+  width: "device-width",
+  initialScale: 1,
+};
+
+export const metadata: Metadata = {
+  title: {
+    default: "خُـطَـى | KHOTA — منصة التعليم الذكية المتكاملة",
+    template: "%s | خُطى KHOTA",
+  },
+  description:
+    "منظومة تعليمية ذكية متكاملة تضم الطالب والمعلم وولي الأمر والإدارة. مسارات دراسية مخصصة، فيديوهات مركزة، اختبارات بتصحيح فوري، ومتابعة حية للإنجاز.",
+  keywords: ["منصة تعليمية", "خُطى", "دروس أونلاين", "امتحانات ثانوية عامة", "EdTech", "كورسات", "مذكرات"],
+  authors: [{ name: "فريق خُطى التعليمي" }],
+  icons: {
+    icon: "/favicon.ico",
+  },
+};
+
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <html lang="ar" dir="rtl" className={`h-full scroll-smooth antialiased ${cairo.variable} ${jakarta.variable}`}>
+      <body className="min-h-full flex flex-col bg-background text-foreground font-sans selection:bg-primary/20 selection:text-primary transition-colors">
+        <SiteHeader />
+        <div className="flex flex-1 flex-col">{children}</div>
+        <SiteFooter />
+      </body>
+    </html>
+  );
+}
