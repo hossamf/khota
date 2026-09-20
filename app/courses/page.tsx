@@ -12,9 +12,10 @@ export const metadata: Metadata = {
 export default async function CoursesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ subject?: string }>;
+  searchParams: Promise<{ subject?: string; q?: string }>;
 }) {
-  const { subject } = await searchParams;
+  const { subject, q } = await searchParams;
+  const query_text = (q ?? "").trim().slice(0, 60);
   const supabase = await createClient();
 
   let subjectId: string | null = null;
@@ -39,6 +40,10 @@ export default async function CoursesPage({
     .order("created_at", { ascending: false })
     .limit(30);
   if (subjectId) query = query.eq("subject_id", subjectId);
+  if (query_text) {
+    const like = `%${query_text.replace(/[%_]/g, "")}%`;
+    query = query.or(`title_ar.ilike.${like},description_ar.ilike.${like}`);
+  }
   const { data: courses } = await query;
 
   return (
@@ -54,30 +59,32 @@ export default async function CoursesPage({
             <span>{subjectTitle ? `مادة: ${subjectTitle}` : "مكتبة الكورسات المنشورة"}</span>
           </div>
           <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-foreground">
-            {subjectTitle ? `كورسات مادة ${subjectTitle}` : "جميع الكورسات والمحاضرات"}
+            {query_text ? `نتائج البحث عن "${query_text}"` : subjectTitle ? `كورسات مادة ${subjectTitle}` : "جميع الكورسات والمحاضرات"}
           </h1>
           <p className="mt-2 text-sm sm:text-base text-muted max-w-2xl">
             اختر الكورس للوصول إلى قائمة الدروس والواجبات والاختبارات التفاعلية المرفقة.
           </p>
         </div>
 
-        {subject && (
+        {subject || query_text ? (
           <Link
             href="/courses"
             className="inline-flex items-center gap-1 text-xs font-bold text-muted hover:text-primary transition-colors bg-surface px-3 py-2 rounded-xl border border-border"
           >
-            <span>إلغاء التصفية وعرض الكل</span>
+            <span>إلغاء {query_text ? "البحث" : "التصفية"} وعرض الكل</span>
           </Link>
-        )}
+        ) : null}
       </div>
 
       {!courses || courses.length === 0 ? (
         <EmptyState
           title="لا توجد كورسات منشورة بعد"
           description={
-            subjectTitle
-              ? `لم يقم المدرسون بعد بنشر كورسات في مادة ${subjectTitle}. تصفح باقي المواد أو تحقق لاحقاً.`
-              : "الكورسات والمحاضرات المنشورة من المعلمين المعتمدين ستظهر هنا تلقائياً."
+            query_text
+              ? `لا توجد كورسات مطابقة لـ "${query_text}". جرّب كلمة أخرى.`
+              : subjectTitle
+                ? `لم يقم المدرسون بعد بنشر كورسات في مادة ${subjectTitle}. تصفح باقي المواد أو تحقق لاحقاً.`
+                : "الكورسات والمحاضرات المنشورة من المعلمين المعتمدين ستظهر هنا تلقائياً."
           }
           actionHref="/subjects"
           actionLabel="استكشف المواد الدراسية"

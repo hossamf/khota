@@ -10,7 +10,8 @@
     "typecheck": "tsc --noEmit",
     "test": "node --test tests/core.test.mjs",
     "test:db": "node scripts/verify-db.mjs",
-    "test:rls": "node scripts/verify-rls.mjs"
+    "test:rls": "node scripts/verify-rls.mjs",
+    "test:acceptance": "node scripts/acceptance-v1.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.5.2",

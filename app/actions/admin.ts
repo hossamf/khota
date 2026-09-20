@@ -73,3 +73,44 @@ export async function adminSetCourseStatus(courseId: string, status: string) {
   revalidatePath("/dashboard/admin/courses");
   revalidatePath("/courses");
 }
+
+// ============ taxonomy (subjects / grades / tracks) ============
+
+function makeSlug(title: string): string {
+  const base = title.trim().replace(/\s+/g, "-").slice(0, 40);
+  return `${base || "item"}-${Math.random().toString(36).slice(2, 7)}`;
+}
+
+export async function createTaxonomy(kind: "subject" | "grade" | "track", formData: FormData) {
+  const { supabase, adminId } = await adminCtx();
+  const title = String(formData.get("title_ar") || "").trim();
+  if (!title) throw new Error("اكتب الاسم");
+  const table = kind === "subject" ? "subjects" : kind === "grade" ? "grades" : "tracks";
+  const row: Record<string, unknown> = { title_ar: title, slug: makeSlug(title) };
+  if (kind === "subject") {
+    row.description_ar = String(formData.get("description_ar") || "").trim() || null;
+    row.grade_id = String(formData.get("grade_id") || "") || null;
+  }
+  const { data, error } = await supabase.from(table).insert(row).select("id").single();
+  if (error) throw new Error(error.message);
+  await log(supabase, adminId, `create_${kind}`, kind, (data as { id: string }).id);
+  revalidatePath("/dashboard/admin/subjects");
+}
+
+export async function toggleTaxonomy(kind: "subject" | "grade" | "track", id: string, active: boolean) {
+  const { supabase, adminId } = await adminCtx();
+  const table = kind === "subject" ? "subjects" : kind === "grade" ? "grades" : "tracks";
+  const { error } = await supabase.from(table).update({ is_active: active }).eq("id", id);
+  if (error) throw new Error(error.message);
+  await log(supabase, adminId, active ? `activate_${kind}` : `deactivate_${kind}`, kind, id);
+  revalidatePath("/dashboard/admin/subjects");
+}
+
+export async function deleteTaxonomy(kind: "subject" | "grade" | "track", id: string) {
+  const { supabase, adminId } = await adminCtx();
+  const table = kind === "subject" ? "subjects" : kind === "grade" ? "grades" : "tracks";
+  const { error } = await supabase.from(table).delete().eq("id", id);
+  if (error) throw new Error("لا يمكن الحذف — مرتبطة ببيانات أخرى. عطّلها بدلاً من ذلك.");
+  await log(supabase, adminId, `delete_${kind}`, kind, id);
+  revalidatePath("/dashboard/admin/subjects");
+}

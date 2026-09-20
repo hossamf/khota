@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Users, BookOpen, GraduationCap, ScrollText } from "lucide-react";
+import { Users, BookOpen, GraduationCap, ScrollText, Tags } from "lucide-react";
 import { guard, signOut } from "../guard";
 import { PageHeader, StatCard } from "@/components/ui/ui";
 
@@ -18,7 +18,7 @@ export default async function AdminDashboard() {
           <button className="rounded-xl border border-border bg-surface px-4 py-2 text-sm font-bold hover:border-danger/50 hover:text-danger transition">خروج</button>
         </form>
       </PageHeader>
-      <div className="mb-6 grid gap-3 sm:grid-cols-3">
+      <div className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <Link href="/dashboard/admin/users" className="group flex items-center gap-3 rounded-2xl border border-border/80 bg-surface/85 p-4 backdrop-blur-xl transition-all hover:-translate-y-0.5 hover:border-primary/50">
           <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary"><Users className="h-5 w-5" /></span>
           <span className="font-bold group-hover:text-primary transition">المستخدمون والتوثيق</span>
@@ -30,6 +30,10 @@ export default async function AdminDashboard() {
         <Link href="/dashboard/admin/logs" className="group flex items-center gap-3 rounded-2xl border border-border/80 bg-surface/85 p-4 backdrop-blur-xl transition-all hover:-translate-y-0.5 hover:border-primary/50">
           <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent/10 text-accent"><ScrollText className="h-5 w-5" /></span>
           <span className="font-bold group-hover:text-primary transition">سجل العمليات</span>
+        </Link>
+        <Link href="/dashboard/admin/subjects" className="group flex items-center gap-3 rounded-2xl border border-border/80 bg-surface/85 p-4 backdrop-blur-xl transition-all hover:-translate-y-0.5 hover:border-primary/50">
+          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-warning/10 text-warning"><Tags className="h-5 w-5" /></span>
+          <span className="font-bold group-hover:text-primary transition">المواد والصفوف</span>
         </Link>
       </div>
       <div className="grid gap-4 md:grid-cols-3">

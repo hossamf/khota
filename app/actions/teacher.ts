@@ -310,11 +310,32 @@ export async function connectChannel(formData: FormData) {
   if (!/^UC[A-Za-z0-9_-]{20,30}$/.test(channelId)) {
     throw new Error("معرف القناة يبدأ بـ UC (من صفحة القناة > مشاركة > نسخ معرف القناة)");
   }
-  const { error } = await supabase.from("youtube_channels").upsert(
-    { teacher_id: teacherId, channel_id: channelId },
-    { onConflict: "channel_id" }
-  );
-  if (error) throw new Error(error.message);
+  // Already mine? just refresh, no error.
+  const { data: mine } = await supabase
+    .from("youtube_channels")
+    .select("id")
+    .eq("teacher_id", teacherId)
+    .eq("channel_id", channelId)
+    .single();
+  if (mine) {
+    await supabase
+      .from("youtube_channels")
+      .update({ connected_at: new Date().toISOString() })
+      .eq("id", mine.id);
+    revalidatePath("/dashboard/teacher/youtube");
+    return;
+  }
+  // Plain insert (no upsert): a conflicting row means another teacher owns it.
+  const { error } = await supabase.from("youtube_channels").insert({
+    teacher_id: teacherId,
+    channel_id: channelId,
+  });
+  if (error) {
+    if (error.code === "23505") {
+      throw new Error("هذه القناة مربوطة بحساب مدرس آخر بالفعل. ادخل بذلك الحساب أو اطلب نقلها من الإدارة.");
+    }
+    throw new Error(error.message);
+  }
   revalidatePath("/dashboard/teacher/youtube");
 }
 
@@ -337,6 +358,7 @@ export async function syncChannel(channelRowId: string) {
   if (entries.length === 0) throw new Error("لا توجد فيديوهات في خلاصة القناة");
 
   let added = 0;
+  let firstError: string | null = null;
   for (const e of entries) {
     const { data: exists } = await supabase
       .from("youtube_videos")
@@ -352,7 +374,14 @@ export async function syncChannel(channelRowId: string) {
       thumbnail_url: `https://i.ytimg.com/vi/${e.videoId}/hqdefault.jpg`,
       published_at: e.published,
     });
-    if (!error) added++;
+    if (!error) {
+      added++;
+    } else if (!firstError) {
+      firstError = error.message;
+    }
+  }
+  if (added === 0 && firstError) {
+    throw new Error(`تعذرت كتابة الفيديوهات (${firstError}) — نفّذ supabase/migrations/0009_youtube_writes.sql`);
   }
   revalidatePath("/dashboard/teacher/youtube");
   return { total: entries.length, added };
