@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/server";
+import { tryCreateClient } from "@/lib/supabase/server";
 import { NotifBell, type Notif } from "./notif-bell";
 import { BrandLogo } from "./brand-logo";
 import { ThemeToggle } from "./theme-toggle";
@@ -14,17 +14,16 @@ import {
 } from "lucide-react";
 
 export async function SiteHeader() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // Null-safe: renders logged-out header during prerender without env.
+  const supabase = await tryCreateClient();
 
   let notifs: Notif[] = [];
   let unread = 0;
   let profileRole: string | null = null;
   let profileName: string | null = null;
 
-  if (user) {
+  const user = supabase ? (await supabase.auth.getUser()).data.user : null;
+  if (user && supabase) {
     const [{ data: notifData }, { data: profile }] = await Promise.all([
       supabase
         .from("notifications")

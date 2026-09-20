@@ -23,8 +23,10 @@ export const viewport: Viewport = {
   initialScale: 1,
 };
 
-export const metadata: Metadata = {
-  title: {
+// Authenticated platform: skip static prerender so builds never need live env.
+export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = {  title: {
     default: "خُـطَـى | KHOTA — منصة التعليم الذكية المتكاملة",
     template: "%s | خُطى KHOTA",
   },
@@ -43,7 +45,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="ar" dir="rtl" className={`h-full scroll-smooth antialiased ${cairo.variable} ${jakarta.variable}`}>
+    <html lang="ar" dir="rtl" className={`h-full scroll-smooth antialiased ${cairo.variable} ${jakarta.variable}`} suppressHydrationWarning>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem('theme');if(t==='dark'||(!t&&matchMedia('(prefers-color-scheme: dark)').matches)){document.documentElement.classList.add('dark')}}catch(e){}})()`,
+          }}
+        />
+      </head>
       <body className="min-h-full flex flex-col bg-background text-foreground font-sans selection:bg-primary/20 selection:text-primary transition-colors">
         <SiteHeader />
         <div className="flex flex-1 flex-col">{children}</div>
