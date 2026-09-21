@@ -21,10 +21,10 @@
 - [ ] Teacher per-question analytics
 
 ## V2.0 Complete Learning Platform
-- [ ] Parent reports (children progress/attempts — tables linked, UI minimal now)
-- [ ] Certificates + `/verify/[code]` (`certificates` table exists)
-- [ ] Gamification: XP/streak/badges (new tables, progress hooks exist)
-- [ ] Learning paths (grade → subject → course sequencing)
+- [x] Gamification engine: XP/streak/badges + hooks (needs `0013` applied) — agent 1
+- [x] Learning paths section on student dashboard — agent 1
+- [ ] Certificates + `/certificates/[id]` verify — agent 2 (Gemini), contract: `maybeIssueCertificate` in `app/actions/certificates.ts`
+- [ ] Parent reports (children progress/attempts) — agent 2 (Gemini), files: `app/dashboard/parent/page.tsx` + `components/parent/*`
 
 ## V2.5 Live + Business
 - [ ] Live sessions + attendance (new tables)

@@ -100,6 +100,14 @@ export async function savePosition(
       : 0;
   const completed = percent >= 80;
 
+  // Previous state (to award gamification only on transition)
+  const { data: prev } = await supabase
+    .from("lesson_progress")
+    .select("completed")
+    .eq("student_id", studentId)
+    .eq("lesson_id", lessonId)
+    .single();
+
   await supabase.from("video_progress").upsert(
     {
       student_id: studentId,
@@ -125,7 +133,15 @@ export async function savePosition(
     .select("course_id")
     .eq("id", lessonId)
     .single();
-  if (lesson) await recomputeCourseProgress(supabase, studentId, lesson.course_id);
+  let coursePercent = 0;
+  if (lesson) {
+    const r = await recomputeCourseProgress(supabase, studentId, lesson.course_id);
+    coursePercent = r.percent;
+  }
+  if (completed && !prev?.completed && lesson) {
+    const { onLessonCompleted } = await import("@/lib/gamification");
+    await onLessonCompleted(supabase, studentId, lessonId, lesson.course_id, coursePercent);
+  }
   return { percent, completed };
 }
 

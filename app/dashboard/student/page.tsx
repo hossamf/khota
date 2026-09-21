@@ -9,14 +9,26 @@ import {
   Award,
   ArrowLeft,
   Sparkles,
+  Flame,
+  Zap,
+  Trophy,
+  Route,
 } from "lucide-react";
+
+const badgeIcons: Record<string, React.ElementType> = {
+  footprints: Route,
+  "file-check": BookOpen,
+  "graduation-cap": Award,
+  flame: Flame,
+  star: Star,
+};
 
 export default async function StudentDashboard() {
   const { supabase, user, profile } = await guard("student");
 
   const { data: student } = await supabase
     .from("students")
-    .select("id")
+    .select("id,grade_id")
     .eq("profile_id", user.id)
     .single();
 
@@ -27,12 +39,16 @@ export default async function StudentDashboard() {
     { data: lastProg },
     { data: favs },
     { data: wls },
+    { data: stats },
+    { data: myBadges },
+    { data: allBadges },
+    { data: pathSubjects },
   ] = await Promise.all([
     student
       ? supabase.from("enrollments").select("id", { count: "exact", head: true }).eq("student_id", student.id)
       : Promise.resolve({ count: 0 }),
     student
-      ? supabase.from("enrollments").select("course_id,progress_percent,courses(title_ar,slug)").eq("student_id", student.id).limit(6)
+      ? supabase.from("enrollments").select("course_id,progress_percent,courses(title_ar,slug,subject_id)").eq("student_id", student.id).limit(6)
       : Promise.resolve({ data: [] }),
     student
       ? supabase.from("exam_attempts").select("id,percent,status").eq("student_id", student.id).order("started_at", { ascending: false }).limit(6)
@@ -46,7 +62,37 @@ export default async function StudentDashboard() {
     student
       ? supabase.from("watch_later").select("lesson_id,lessons(id,title_ar,course_id,courses(slug))").eq("student_id", student.id).limit(6)
       : Promise.resolve({ data: [] }),
+    student
+      ? supabase.from("student_stats").select("total_xp,current_streak,longest_streak").eq("student_id", student.id).single()
+      : Promise.resolve({ data: null }),
+    student
+      ? supabase.from("student_badges").select("awarded_at,badges(slug,title_ar,description_ar,icon)").eq("student_id", student.id)
+      : Promise.resolve({ data: [] }),
+    supabase.from("badges").select("slug,title_ar,description_ar,icon").limit(20),
+    student?.grade_id
+      ? supabase.from("subjects").select("id,title_ar,slug").eq("grade_id", student.grade_id).eq("is_active", true).order("order_num").limit(12)
+      : Promise.resolve({ data: [] }),
   ]);
+
+  const earnedSlugs = new Set(
+    ((myBadges ?? []) as unknown as { badges: { slug: string } | { slug: string }[] }[]).map((b) =>
+      Array.isArray(b.badges) ? b.badges[0]?.slug : b.badges?.slug
+    )
+  );
+
+  // Learning path: per-subject progress from enrollments
+  const subjectProgress = new Map<string, { total: number; count: number; slug: string; title: string }>();
+  for (const e of (enrollments ?? []) as unknown as {
+    progress_percent: number;
+    courses: { title_ar: string; slug: string; subject_id: string | null } | { title_ar: string; slug: string; subject_id: string | null }[] | null;
+  }[]) {
+    const c = Array.isArray(e.courses) ? e.courses[0] : e.courses;
+    if (!c?.subject_id) continue;
+    const cur = subjectProgress.get(c.subject_id) ?? { total: 0, count: 0, slug: "", title: "" };
+    cur.total += e.progress_percent ?? 0;
+    cur.count += 1;
+    subjectProgress.set(c.subject_id, cur);
+  }
 
   const last = (lastProg ?? [])[0] as unknown as {
     lesson_id: string;
@@ -182,6 +228,90 @@ export default async function StudentDashboard() {
           </div>
         </div>
       </div>
+
+      {/* Gamification: XP + streak + badges */}
+      <div className="mb-10 grid gap-5 md:grid-cols-3">
+        <div className="rounded-3xl border border-warning/30 bg-gradient-to-br from-warning/10 via-surface to-surface p-6">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-muted">نقاط الخبرة XP</span>
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-warning/15 text-warning">
+              <Zap className="w-4 h-4" />
+            </div>
+          </div>
+          <div className="mt-4 text-3xl font-black text-foreground" dir="ltr">
+            {(stats as { total_xp: number } | null)?.total_xp ?? 0}
+          </div>
+          <div className="mt-2 text-xs text-muted">+10 لكل درس • +20 لكل امتحان • +100 لكل كورس</div>
+        </div>
+
+        <div className="rounded-3xl border border-danger/30 bg-gradient-to-br from-danger/10 via-surface to-surface p-6">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-muted">أيام المذاكرة المتتالية</span>
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-danger/15 text-danger">
+              <Flame className="w-4 h-4" />
+            </div>
+          </div>
+          <div className="mt-4 text-3xl font-black text-foreground" dir="ltr">
+            {(stats as { current_streak: number } | null)?.current_streak ?? 0} 🔥
+          </div>
+          <div className="mt-2 text-xs text-muted">ذاكر يومياً لتحافظ على السلسلة</div>
+        </div>
+
+        <div className="rounded-3xl border border-border/80 bg-surface/85 p-6 backdrop-blur-md">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-muted">الأوسمة ({earnedSlugs.size})</span>
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-accent/10 text-accent">
+              <Trophy className="w-4 h-4" />
+            </div>
+          </div>
+          <div className="mt-4 flex flex-wrap gap-2">
+            {((allBadges ?? []) as { slug: string; title_ar: string; description_ar: string | null; icon: string }[]).map((b) => {
+              const earned = earnedSlugs.has(b.slug);
+              const Icon = badgeIcons[b.icon] ?? Award;
+              return (
+                <span
+                  key={b.slug}
+                  title={b.description_ar ?? b.title_ar}
+                  className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-bold ${
+                    earned
+                      ? "border-accent/40 bg-accent/10 text-accent"
+                      : "border-border text-muted opacity-50"
+                  }`}
+                >
+                  <Icon className="h-3.5 w-3.5" />
+                  {b.title_ar}
+                </span>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      {/* Learning path: my grade subjects */}
+      {(pathSubjects ?? []).length > 0 ? (
+        <div className="mb-10">
+          <h2 className="mb-4 text-lg font-bold text-foreground">مساري التعليمي 🗺️</h2>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {((pathSubjects ?? []) as { id: string; title_ar: string; slug: string }[]).map((s) => {
+              const sp = subjectProgress.get(s.id);
+              const pct = sp && sp.count > 0 ? Math.round(sp.total / sp.count) : 0;
+              return (
+                <Link
+                  key={s.id}
+                  href={`/courses?subject=${s.slug}`}
+                  className="group rounded-2xl border border-border/80 bg-surface p-5 transition-all hover:border-primary/50 hover:shadow-md hover:-translate-y-0.5"
+                >
+                  <div className="font-bold text-foreground group-hover:text-primary transition-colors">{s.title_ar}</div>
+                  <div className="mt-3 h-2 overflow-hidden rounded-full bg-border" dir="ltr">
+                    <div className="h-full rounded-full bg-gradient-to-r from-primary to-secondary transition-all" style={{ width: `${pct}%` }} />
+                  </div>
+                  <div className="mt-1.5 text-xs text-muted">{pct}% من مسار المادة</div>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      ) : null}
 
       {/* Recent Enrolled Courses */}
       <div className="mb-10">

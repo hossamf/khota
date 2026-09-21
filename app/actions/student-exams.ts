@@ -136,5 +136,10 @@ export async function submitAttempt(attemptId: string, answers: AnswerInput[]) {
       link: `/exams/attempts/${attemptId}`,
     });
   }
+
+  // Gamification: XP + streak + badges
+  const { onExamSubmitted } = await import("@/lib/gamification");
+  await onExamSubmitted(supabase, studentId, attemptId, result.percent);
+
   return attemptId;
 }
