@@ -6,6 +6,7 @@
   --color-surface: var(--surface);
   --color-surface-2: var(--surface-2);
   --color-surface-raised: var(--surface-raised);
+  --color-brand: var(--primary);
   --color-primary: var(--primary);
   --color-primary-hover: var(--primary-hover);
   --color-primary-2: var(--primary-2);
