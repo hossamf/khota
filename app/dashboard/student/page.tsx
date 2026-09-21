@@ -43,6 +43,7 @@ export default async function StudentDashboard() {
     { data: myBadges },
     { data: allBadges },
     { data: pathSubjects },
+    { data: certs },
   ] = await Promise.all([
     student
       ? supabase.from("enrollments").select("id", { count: "exact", head: true }).eq("student_id", student.id)
@@ -71,6 +72,9 @@ export default async function StudentDashboard() {
     supabase.from("badges").select("slug,title_ar,description_ar,icon").limit(20),
     student?.grade_id
       ? supabase.from("subjects").select("id,title_ar,slug").eq("grade_id", student.grade_id).eq("is_active", true).order("order_num").limit(12)
+      : Promise.resolve({ data: [] }),
+    student
+      ? supabase.from("certificates").select("verification_code,issued_at,courses(title_ar)").eq("student_id", student.id).order("issued_at", { ascending: false }).limit(10)
       : Promise.resolve({ data: [] }),
   ]);
 
@@ -434,6 +438,42 @@ export default async function StudentDashboard() {
             </div>
           )}
         </div>
+      </div>
+
+      {/* Certificates */}
+      <div className="mt-6 rounded-3xl border border-border/80 bg-surface/80 p-6 backdrop-blur-md">
+        <div className="flex items-center gap-2 mb-4">
+          <Award className="w-4 h-4 text-success" />
+          <h3 className="font-bold text-foreground">شهاداتي</h3>
+        </div>
+        {(certs ?? []).length === 0 ? (
+          <p className="text-xs text-muted py-4 text-center">
+            أكمل كورساً بنسبة 100% لتحصل على شهادتك الأولى 🎓
+          </p>
+        ) : (
+          <div className="grid gap-3 sm:grid-cols-2">
+            {((certs ?? []) as unknown as {
+              verification_code: string;
+              issued_at: string;
+              courses: { title_ar: string } | { title_ar: string }[] | null;
+            }[]).map((c) => {
+              const course = Array.isArray(c.courses) ? c.courses[0] : c.courses;
+              return (
+                <Link
+                  key={c.verification_code}
+                  href={`/certificates/${c.verification_code}`}
+                  className="flex items-center justify-between gap-2 p-3 rounded-xl border border-success/30 bg-success/5 hover:border-success/60 transition-all text-xs font-semibold"
+                >
+                  <span>
+                    <span className="block text-foreground">{course?.title_ar ?? "كورس"}</span>
+                    <span className="text-muted" dir="ltr">{c.verification_code}</span>
+                  </span>
+                  <Award className="w-5 h-5 text-success shrink-0" />
+                </Link>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );
